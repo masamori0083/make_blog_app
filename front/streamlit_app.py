@@ -2,29 +2,61 @@ import requests
 import streamlit as st
 
 st.set_page_config(layout="wide")
-
-st.title("🚀 コード解析 & Markdown記事作成ツール")
-
-# コード入力用テキストエリア
-code = st.text_area("🔖 解析したいコードをここに貼り付けてください", height=300)
+st.title("🚀 技術ブログ生成ツール")
 
 # セッション状態初期化
 if "markdown" not in st.session_state:
     st.session_state.markdown = ""
 
+# テキスト入力
+tab1, tab2 = st.tabs(["📟 コード解析", "📖 テキスト解析"])
 
-# 解析&記事作成ボタン
-if st.button("⚙️ 解析 & 記事生成") and code.strip():
-    with st.spinner("解析中..."):
-        # APIリクエスト
-        response = requests.post("http://localhost:8000/analyze", json={"code": code})
+# コード解析タブ
+with tab1:
+    code = st.text_area(
+        "🔖 ソースコードをここに貼り付けてください", height=300, key="code_input"
+    )
 
-        # レスポンスの処理
-        if response.status_code == 200:
-            st.session_state.markdown = response.json().get("markdown", "")
-            st.success("解析が完了しました！")
+    if st.button("⚙️ コード解析 & 記事生成"):
+        if code.strip():
+            with st.spinner("コードを解析しています..."):
+                response = requests.post(
+                    "http://localhost:8000/analyze_code", json={"code": code}
+                )
+
+                if response.status_code == 200:
+                    st.session_state.markdown = response.json().get("markdown", "")
+                    st.success("コード解析が完了しました！")
+                else:
+                    st.error(
+                        "❌ APIサーバーエラーです。バックエンドを確認してください。"
+                    )
         else:
-            st.error("❌ APIサーバーエラーです。バックエンドを確認してください。")
+            st.warning("コードを入力してください。")
+
+# テキスト解析タブ
+with tab2:
+    text = st.text_area(
+        "🔖 テキストをここに貼り付けてください", height=300, key="text_input"
+    )
+
+    if st.button("⚙️ テキスト解析 & 記事生成"):
+        if text.strip():
+            with st.spinner("テキストを解析しています..."):
+                response = requests.post(
+                    "http://localhost:8000/analyze_text", json={"text": text}
+                )
+
+                if response.status_code == 200:
+                    st.session_state.markdown = response.json().get("markdown", "")
+                    st.success("テキスト解析が完了しました！")
+                else:
+                    st.error(
+                        "❌ APIサーバーエラーです。バックエンドを確認してください。"
+                    )
+        else:
+            st.warning("テキストを入力してください。")
+
 
 # Markdownエディターとプレビュー
 if st.session_state.markdown:
@@ -36,7 +68,7 @@ if st.session_state.markdown:
         # Markdownエディター
         st.subheader("📝 生成されたMarkdown記事")
         edited_markdown = st.text_area(
-            "生成されたMarkdown記事", value=st.session_state.markdown, height=600
+            "Markdownを自由に編集できます", value=st.session_state.markdown, height=600
         )
 
     # プレビューのUI構成
